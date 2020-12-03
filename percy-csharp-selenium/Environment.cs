@@ -27,9 +27,41 @@ namespace percy_csharp_selenium
         public String getEnvironmentInfo()
         {
             ICapabilities cap = ((IHasCapabilities)this.driver).Capabilities;
-            String os = cap.GetCapability("platformName").ToString().ToLower();
-            String browserName = cap.GetCapability("browserName").ToString().ToLower();
-            String version = cap.GetCapability("browserVersion").ToString().ToLower();
+
+            String os;
+            String browserName;
+            String version;
+
+
+            // check for platform
+            if (cap.HasCapability("platformName"))
+                os = cap.GetCapability("platformName").ToString().ToLower();
+            else if (cap.HasCapability("platform"))
+                os = cap.GetCapability("platform").ToString().ToLower();
+            else if (cap.HasCapability("os"))
+                os = cap.GetCapability("os").ToString().ToLower();
+            else
+                os = "unknownPlatform";
+
+
+            // check for browser name
+            if (cap.HasCapability("browserName"))
+                browserName = cap.GetCapability("browserName").ToString().ToLower();
+            if (cap.HasCapability("browser"))
+                browserName = cap.GetCapability("browser").ToString().ToLower();
+            else
+                browserName = "unknownBrowser";
+
+
+            // check for browser version
+            if (cap.HasCapability("browserVersion"))
+                version = cap.GetCapability("browserVersion").ToString().ToLower();
+            else if (cap.HasCapability("version"))
+                version = cap.GetCapability("version").ToString().ToLower();
+            else
+                version = "unknownVersion";
+
+
             return String.Format("selenium-csharp; %s; %s/%s", os, browserName, version);
         }
     }
