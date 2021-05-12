@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net45;net46;net47;net48</TargetFrameworks>
     <RootNamespace>percy_csharp_selenium</RootNamespace>
-    <PackageVersion>0.1.2-alpha</PackageVersion>
+    <PackageVersion>0.1.3-alpha</PackageVersion>
     <ReleaseVersion>0.1.2</ReleaseVersion>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SynchReleaseVersion>false</SynchReleaseVersion>
