@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Json;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Linq;
 using System.Text;
+
 
 using OpenQA.Selenium;
 
@@ -30,7 +34,10 @@ namespace percy_csharp_selenium
         private Environment env;
 
         // Is the Percy server running or not
-        private Boolean isPercyEnabled = healthcheck();
+        private Boolean isPercyEnabled;
+
+        // HttpClient is intended to be instantiated once per application, rather than per-use.
+        private static readonly HttpClient client = new HttpClient();
 
         /**
              * @param driver The Selenium WebDriver object that will hold the browser
@@ -40,6 +47,54 @@ namespace percy_csharp_selenium
         {
             this.driver = driver; 
             this.env = new Environment(driver);
+            isPercyEnabled = healthcheck().Result;
+        }
+
+        /**
+        * Checks to make sure the local Percy server is running. If not, disable Percy.
+        */
+        private async System.Threading.Tasks.Task<Boolean> healthcheck() {
+            try {
+                
+                //Executing the Get request
+                HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/healthcheck");
+                int statusCode = (int)response.StatusCode;
+
+                if (statusCode != 200){
+                    throw new Exception("Failed with HTTP error code : " + statusCode);
+                }
+
+                String version = null;
+                IEnumerable<string> values;
+                if (response.Headers.TryGetValues("x-percy-core-version", out values) ) {
+                    //will return null if Header not found
+                    version = values.FirstOrDefault();
+                }
+
+                if (version == null) {
+                    Console.WriteLine("You may be using @percy/agent" +
+                        "which is no longer supported by this SDK." +
+                        "Please uninstall @percy/agent and install @percy/cli instead." +
+                        "https://docs.percy.io/docs/migrating-to-percy-cli"
+                        );
+
+                    return false;
+                }
+
+                if (!version.Split("\\.")[0].Equals("1")) {
+                    Console.WriteLine("Unsupported Percy CLI version, " + version);
+
+                    return false;
+                }
+
+                return true;
+            } catch (Exception ex) {
+                Console.WriteLine("\nException Caught!");	
+                Console.WriteLine("Message :{0} ",ex.Message);
+
+                return false;
+            }
+
         }
 
         /**
