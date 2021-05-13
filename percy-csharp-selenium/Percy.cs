@@ -22,9 +22,6 @@ namespace percy_csharp_selenium
         // Selenium WebDriver we'll use for accessing the web pages to snapshot.
         private IWebDriver driver;
 
-        // The JavaScript contained in percy-agent.js
-        private String percyAgentJs;
-
         // Environment information like the programming language, browser, & SDK versions
         private Environment env;
 
@@ -39,39 +36,6 @@ namespace percy_csharp_selenium
         {
             this.driver = driver;
             this.env = new Environment(driver);
-            this.percyAgentJs = LoadPercyAgentJsAsync().Result;
-        }
-
-        /**
-             * Attempts to load percy-agent.js from `http://localhost:5338/percy-agent.js`.
-             *
-             * This JavaScript is critical for capturing snapshots. It serializes and captures
-             * the DOM. Without it, snapshots cannot be captured.
-        */
-        private async System.Threading.Tasks.Task<string> LoadPercyAgentJsAsync()
-        {
-            try
-            {
-                //Creating a HttpGet object
-                using HttpClient client = new HttpClient();
-                var response = await client.GetAsync("http://localhost:5338/" + AGENTJS_FILE);
-
-                int statusCode = (int)response.StatusCode;
-                if (statusCode != 200)
-                {
-                    throw new Exception("Failed with HTTP error code : " + statusCode);
-                }
-
-                String agentJSString = await response.Content.ReadAsStringAsync();
-                return agentJSString;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[percy] An error occured while retrieving percy-agent.js: " + ex);
-                percyIsRunning = false;
-                Console.WriteLine("[percy] Percy has been disabled");
-                return null;
-            }
         }
 
         /**
@@ -138,17 +102,11 @@ namespace percy_csharp_selenium
         {
             String domSnapshot = "";
 
-            if (percyAgentJs == null)
-            {
-                // This would happen if we couldn't load percy-agent.js in the constructor.
-                return;
-            }
-
             string script = null;
             try
             {
                 IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
-                jse.ExecuteScript(percyAgentJs);
+                //jse.ExecuteScript(fetchPercyDOM());
                 script = BuildSnapshotJS();
                 domSnapshot = (String)jse.ExecuteScript(script);
             }
