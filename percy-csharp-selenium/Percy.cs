@@ -15,18 +15,22 @@ namespace percy_csharp_selenium
    */
     public class Percy
     {
-
-        // We'll expect this file to exist at the root of our classpath, as a resource.
-        private static readonly String AGENTJS_FILE = "percy-agent.js";
-
         // Selenium WebDriver we'll use for accessing the web pages to snapshot.
         private IWebDriver driver;
+
+        // The JavaScript contained in dom.js
+        private String domJs = "";
+
+        // Maybe get the CLI server address if not Set the CLI server address 
+        //could be moved to percy-csharp-selenium Environment
+        private String PERCY_SERVER_ADDRESS = System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS")!=null?
+                System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS") : "http://localhost:5338";
 
         // Environment information like the programming language, browser, & SDK versions
         private Environment env;
 
-        // Is the Percy Agent process running or not
-        private bool percyIsRunning = true;
+        // Is the Percy server running or not
+        private Boolean isPercyEnabled = healthcheck();
 
         /**
              * @param driver The Selenium WebDriver object that will hold the browser
@@ -34,7 +38,7 @@ namespace percy_csharp_selenium
         */
         public Percy(IWebDriver driver)
         {
-            this.driver = driver;
+            this.driver = driver; 
             this.env = new Environment(driver);
         }
 
@@ -100,15 +104,16 @@ namespace percy_csharp_selenium
              */
         public void Snapshot(String name, List<int> widths, int minHeight, bool enableJavaScript, String percyCSS)
         {
-            String domSnapshot = "";
+            if(!isPercyEnabled) {
+                return;
+            }
 
-            string script = null;
+            String domSnapshot = "";
             try
             {
                 IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
-                //jse.ExecuteScript(fetchPercyDOM());
-                script = BuildSnapshotJS();
-                domSnapshot = (String)jse.ExecuteScript(script);
+                jse.ExecuteScript(fetchPercyDOM());
+                domSnapshot = (String)jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString()));
             }
             catch (WebDriverException e)
             {
@@ -200,7 +205,7 @@ namespace percy_csharp_selenium
              * @return A String containing the JavaScript needed to instantiate a PercyAgent
              *         and take a snapshot.
         */
-        private String BuildSnapshotJS()
+        private String BuildSnapshotJS(String enableJavaScript)
         {
             StringBuilder jsBuilder = new StringBuilder();
 
