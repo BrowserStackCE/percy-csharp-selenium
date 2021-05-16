@@ -6,6 +6,7 @@ using System.Json;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Text;
 
@@ -53,7 +54,7 @@ namespace percy_csharp_selenium
         /**
         * Checks to make sure the local Percy server is running. If not, disable Percy.
         */
-        private async System.Threading.Tasks.Task<Boolean> healthcheck() {
+        private async Task<Boolean> healthcheck() {
             try {
                 
                 //Executing the Get request
@@ -167,7 +168,7 @@ namespace percy_csharp_selenium
             try
             {
                 IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
-                jse.ExecuteScript(fetchPercyDOM());
+                jse.ExecuteScript(fetchPercyDOM().Result);
                 domSnapshot = (String)jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString()));
             }
             catch (WebDriverException e)
@@ -177,6 +178,45 @@ namespace percy_csharp_selenium
             }
 
             PostSnapshot(domSnapshot, name, widths, minHeight, driver.Url, enableJavaScript, percyCSS);
+        }
+
+        /**
+        * Attempts to load dom.js from the local Percy server. Use cached value in `domJs`,
+        * if it exists.
+        *
+        * This JavaScript is critical for capturing snapshots. It serializes and captures
+        * the DOM. Without it, snapshots cannot be captured.
+        */
+        private async Task<string> fetchPercyDOM() {
+        
+            try {
+                HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
+                int statusCode = (int)response.StatusCode;
+
+                if (statusCode != 200){
+                    throw new Exception("Failed with HTTP error code: " + statusCode);
+                }
+
+
+                HttpContent httpEntity = response.Content;
+                String domString = httpEntity.ToString();
+                Console.WriteLine("-------------------------------------------");
+                Console.WriteLine("-------------------------------------------");
+                Console.WriteLine("domString retrieved from response Content: ");
+                Console.WriteLine(domString);
+                domJs = domString;
+
+                return domString;
+            } catch (Exception ex) {
+                isPercyEnabled = false;
+                Console.WriteLine("[percy] Something went wrong attempting to fetch DOM: " + ex.Message);
+
+            }
+
+            return "";
+        }
+
+            return "";
         }
 
         /**
