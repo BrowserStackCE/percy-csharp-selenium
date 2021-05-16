@@ -200,9 +200,6 @@ namespace percy_csharp_selenium
 
                 HttpContent httpEntity = response.Content;
                 String domString = httpEntity.ToString();
-                Console.WriteLine("-------------------------------------------");
-                Console.WriteLine("-------------------------------------------");
-                Console.WriteLine("domString retrieved from response Content: ");
                 Console.WriteLine(domString);
                 domJs = domString;
 
@@ -212,9 +209,6 @@ namespace percy_csharp_selenium
                 Console.WriteLine("[percy] Something went wrong attempting to fetch DOM: " + ex.Message);
 
             }
-
-            return "";
-        }
 
             return "";
         }
@@ -232,7 +226,7 @@ namespace percy_csharp_selenium
         */
         private void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
         {
-            if (percyIsRunning == false)
+            if (!isPercyEnabled)
             {
                 return;
             }
@@ -255,9 +249,7 @@ namespace percy_csharp_selenium
                 json.Add("widths", JsonArray.Parse(GetSnapshotWidths(widths)));
             }
 
-            string base_url = "http://localhost:5338/percy/snapshot";
-
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(base_url);
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(PERCY_SERVER_ADDRESS+"/percy/snapshot");
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = WebRequestMethods.Http.Post;
             httpWebRequest.ProtocolVersion = HttpVersion.Version11;
@@ -279,9 +271,8 @@ namespace percy_csharp_selenium
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[percy] An error occured when sending the DOM to agent: " + ex);
-                percyIsRunning = false;
-                Console.WriteLine("[percy] Percy has been disabled");
+                Console.WriteLine("[percy] could not post snapshot: " + name);
+                Console.WriteLine("[percy] An error occured when posting the snapshot: " + ex);
             }
 
         }
@@ -303,9 +294,7 @@ namespace percy_csharp_selenium
         private String BuildSnapshotJS(String enableJavaScript)
         {
             StringBuilder jsBuilder = new StringBuilder();
-
-            string test_script = "var percyAgentClient = new PercyAgent({ handleAgentCommunication: false })\nreturn percyAgentClient.snapshot('not used')";
-            jsBuilder.Append(test_script);
+            jsBuilder.Append(String.Format("return PercyDOM.serialize({ enableJavaScript: %s })\n", enableJavaScript));
             return jsBuilder.ToString();
         }
     }
