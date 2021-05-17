@@ -48,13 +48,13 @@ namespace percy_csharp_selenium
         {
             this.driver = driver; 
             this.env = new Environment(driver);
-            isPercyEnabled = healthcheck().Result;
+            isPercyEnabled = Healthcheck().Result;
         }
 
         /**
         * Checks to make sure the local Percy server is running. If not, disable Percy.
         */
-        private async Task<Boolean> healthcheck() {
+        private async Task<Boolean> Healthcheck() {
             try {
                 
                 //Executing the Get request
@@ -168,7 +168,7 @@ namespace percy_csharp_selenium
             try
             {
                 IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
-                jse.ExecuteScript(fetchPercyDOM().Result);
+                jse.ExecuteScript(FetchPercyDOM().Result);
                 domSnapshot = (String)jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString()));
             }
             catch (WebDriverException e)
@@ -187,7 +187,7 @@ namespace percy_csharp_selenium
         * This JavaScript is critical for capturing snapshots. It serializes and captures
         * the DOM. Without it, snapshots cannot be captured.
         */
-        private async Task<string> fetchPercyDOM() {
+        private async Task<string> FetchPercyDOM() {
         
             try {
                 HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
