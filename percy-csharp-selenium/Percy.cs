@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Json;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Text;
-
-
+using System.Text; 
 using OpenQA.Selenium;
+using Newtonsoft.Json;
 
 namespace percy_csharp_selenium
 {
@@ -82,7 +77,7 @@ namespace percy_csharp_selenium
                     return false;
                 }
 
-                if (!version.Split("\\.")[0].Equals("1")) {
+                if (!version.Split('.')[0].Equals("1")) {
                     Console.WriteLine("Unsupported Percy CLI version, " + version);
 
                     return false;
@@ -199,8 +194,7 @@ namespace percy_csharp_selenium
 
 
                 HttpContent httpEntity = response.Content;
-                String domString = httpEntity.ToString();
-                Console.WriteLine(domString);
+                String domString = httpEntity.ReadAsStringAsync().Result;
                 domJs = domString;
 
                 return domString;
@@ -224,68 +218,73 @@ namespace percy_csharp_selenium
              * @param enableJavaScript Enable JavaScript in the Percy rendering environment
              * @param percyCSS Percy specific CSS that is only applied in Percy's browsers
         */
-        private void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
+        private  void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
         {
             if (!isPercyEnabled)
             {
                 return;
             }
 
-            // Build a JSON object to POST back to the agent node process
-            JsonObject json = new JsonObject();
-            json.Add("url", url);
-            json.Add("name", name);
-            json.Add("percyCSS", percyCSS);
-            json.Add("minHeight", minHeight);
-            json.Add("domSnapshot", domSnapshot);
-            json.Add("clientInfo", env.getClientInfo());
-            //json.Add("clientInfo", "percy-java-selenium/unknown");
-            json.Add("enableJavaScript", enableJavaScript);
-            json.Add("environmentInfo", env.getEnvironmentInfo());
-            //json.Add("environmentInfo", "selenium-java; MAC; chrome/85.0.4183.121");
-            // Sending an empty array of widths to agent breaks asset discovery
-            if (widths != null && widths.Count != 0)
+            if (widths == null)
             {
-                json.Add("widths", JsonArray.Parse(GetSnapshotWidths(widths)));
+                widths =  new List<int>{};
             }
 
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(PERCY_SERVER_ADDRESS+"/percy/snapshot");
-            httpWebRequest.ContentType = "application/json";
-            httpWebRequest.Method = WebRequestMethods.Http.Post;
-            httpWebRequest.ProtocolVersion = HttpVersion.Version11;
-            try
+            if (percyCSS == null)
             {
-                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream(), Encoding.UTF8))
-                {
-                    streamWriter.Write(json.ToString());
-                    streamWriter.Flush();
-                    streamWriter.Close();
+                percyCSS = "";
+            }
 
-                    var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            var  param_dict = new Dictionary<string, object>(){
+
+                {"url", url},
+                {"name", name},
+                {"percyCSS", percyCSS},
+                {"domSnapshot", domSnapshot },
+                {"clientInfo", env.getClientInfo()},
+                { "enableJavaScript", enableJavaScript },
+                { "environmentInfo", env.getEnvironmentInfo()},
+                { "widths", widths},
+                { "minHeight", minHeight }
+
+            };
+
+
+            var res = HttpPostPercySnapshot(param_dict).Result;
+
+
+
+        }
+
+        private async  Task<string> HttpPostPercySnapshot(Dictionary<string, object> param_dict)
+        {
+
+            try
+            {  
+                using (var httpClient = new HttpClient())
+                {
+                    using (var request = new HttpRequestMessage(new HttpMethod("POST"), PERCY_SERVER_ADDRESS + "/percy/snapshot"))
                     {
-                        // We don't really care about the response -- as long as their test suite doesn't fail
-                        var result = streamReader.ReadToEnd();
+                        
+                        request.Content = new StringContent(JsonConvert.SerializeObject(param_dict));
+                        request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
+                        var response = await httpClient.SendAsync(request);
+                        response.EnsureSuccessStatusCode();
+                        var responseString = response.Content.ReadAsStringAsync().Result;
+
                     }
                 }
+
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[percy] could not post snapshot: " + name);
+                Console.WriteLine("[percy] could not post snapshot: " + param_dict["name"]);
                 Console.WriteLine("[percy] An error occured when posting the snapshot: " + ex);
             }
 
+            return "";
         }
 
-        private String GetSnapshotWidths(List<int> widths)
-        {
-            StringBuilder info = new StringBuilder();
-            info.Append("[");
-            string widthsStr = string.Join(",", widths);
-            info.Append(widthsStr);
-            info.Append("]");
-            return info.ToString();
-        }
 
         /**
              * @return A String containing the JavaScript needed to instantiate a PercyAgent
@@ -294,7 +293,8 @@ namespace percy_csharp_selenium
         private String BuildSnapshotJS(String enableJavaScript)
         {
             StringBuilder jsBuilder = new StringBuilder();
-            jsBuilder.Append(String.Format("return PercyDOM.serialize({ enableJavaScript: %s })\n", enableJavaScript));
+            // the double {{ and }} are needed to escape the curly braces
+            jsBuilder.Append(String.Format("return PercyDOM.serialize({{ enableJavaScript: {0} }})\n", enableJavaScript.ToLower()));
             return jsBuilder.ToString();
         }
     }
