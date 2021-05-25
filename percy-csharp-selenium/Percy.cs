@@ -189,6 +189,10 @@ namespace percy_csharp_selenium
         */
         private async Task<string> FetchPercyDOM() {
         
+            if (!String.IsNullOrEmpty(domJs.Trim())) { 
+                return domJs; 
+            }
+
             try {
                 HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
                 int statusCode = (int)response.StatusCode;
