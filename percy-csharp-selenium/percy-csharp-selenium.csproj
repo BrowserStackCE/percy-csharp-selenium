@@ -4,8 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net45;net46;net47;net48</TargetFrameworks>
     <RootNamespace>percy_csharp_selenium</RootNamespace>
-    <PackageVersion>0.1.2-alpha</PackageVersion>
-    <ReleaseVersion>0.1.2</ReleaseVersion>
+    <PackageVersion>1.0.0-alpha</PackageVersion>
+    <ReleaseVersion>1.0.0</ReleaseVersion>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <SynchReleaseVersion>false</SynchReleaseVersion>
     <Description>Percy C# Selenium SDK - This nuget package enables developers to run visual tests using Percy and C#.NET frameworks</Description>
@@ -26,5 +26,6 @@
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <PackageReference Include="System.Json" Version="4.7.1" />
     <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
   </Project>
