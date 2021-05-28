@@ -9,7 +9,7 @@ namespace percy_csharp_selenium
         public Environment() { }
 
         private readonly static String DEFAULT_ARTIFACTID = "percy-csharp-selenium";
-        private readonly static String UNKNOWN_VERSION = "unknown";
+        private readonly static String SDK_VERSION = "1.0.0";
         private readonly IWebDriver driver;
 
         public Environment(IWebDriver driver)
@@ -20,7 +20,7 @@ namespace percy_csharp_selenium
         public String getClientInfo()
         {
             String artifactId = DEFAULT_ARTIFACTID;
-            String version = UNKNOWN_VERSION;
+            String version = SDK_VERSION;
             return String.Format("%s/%s", artifactId, version);
         }
 

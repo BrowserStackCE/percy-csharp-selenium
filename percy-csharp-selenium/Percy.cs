@@ -4,15 +4,15 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Text; 
+using System.Text;
 using OpenQA.Selenium;
 using Newtonsoft.Json;
 
 namespace percy_csharp_selenium
 {
-   /**
-   * Percy client for visual testing.
-   */
+    /**
+    * Percy client for visual testing.
+    */
     public class Percy
     {
         // Selenium WebDriver we'll use for accessing the web pages to snapshot.
@@ -23,8 +23,14 @@ namespace percy_csharp_selenium
 
         // Maybe get the CLI server address if not Set the CLI server address 
         //could be moved to percy-csharp-selenium Environment
-        private String PERCY_SERVER_ADDRESS = System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS")!=null?
+        private String PERCY_SERVER_ADDRESS = System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS") != null ?
                 System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS") : "http://localhost:5338";
+
+        // Determine if we're debug logging
+        private bool PERCY_DEBUG;
+
+        // for logging
+        private String LABEL;
 
         // Environment information like the programming language, browser, & SDK versions
         private Environment env;
@@ -41,34 +47,42 @@ namespace percy_csharp_selenium
         */
         public Percy(IWebDriver driver)
         {
-            this.driver = driver; 
+            this.driver = driver;
             this.env = new Environment(driver);
             isPercyEnabled = Healthcheck().Result;
+            PERCY_DEBUG = System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS") != null &&
+                System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS").Equals("debug");
+            LABEL = "[\u001b[35m" + (PERCY_DEBUG ? "percy:cs" : "percy") + "\u001b[39m]";
         }
 
         /**
         * Checks to make sure the local Percy server is running. If not, disable Percy.
         */
-        private async Task<Boolean> Healthcheck() {
-            try {
-                
+        private async Task<Boolean> Healthcheck()
+        {
+            try
+            {
+
                 //Executing the Get request
                 HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/healthcheck");
                 int statusCode = (int)response.StatusCode;
 
-                if (statusCode != 200){
+                if (statusCode != 200)
+                {
                     throw new Exception("Failed with HTTP error code : " + statusCode);
                 }
 
                 String version = null;
                 IEnumerable<string> values;
-                if (response.Headers.TryGetValues("x-percy-core-version", out values) ) {
+                if (response.Headers.TryGetValues("x-percy-core-version", out values))
+                {
                     //will return null if Header not found
                     version = values.FirstOrDefault();
                 }
 
-                if (version == null) {
-                    Console.WriteLine("You may be using @percy/agent" +
+                if (version == null)
+                {
+                    Log("You may be using @percy/agent" +
                         "which is no longer supported by this SDK." +
                         "Please uninstall @percy/agent and install @percy/cli instead." +
                         "https://docs.percy.io/docs/migrating-to-percy-cli"
@@ -77,16 +91,22 @@ namespace percy_csharp_selenium
                     return false;
                 }
 
-                if (!version.Split('.')[0].Equals("1")) {
-                    Console.WriteLine("Unsupported Percy CLI version, " + version);
+                if (!version.Split('.')[0].Equals("1"))
+                {
+                    Log("Unsupported Percy CLI version, " + version);
 
                     return false;
                 }
 
                 return true;
-            } catch (Exception ex) {
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Log("Percy is not running, disabling snapshots");
+                if (PERCY_DEBUG)
+                {
+                    Log(ex.ToString());
+                }
 
                 return false;
             }
@@ -155,7 +175,8 @@ namespace percy_csharp_selenium
              */
         public void Snapshot(String name, List<int> widths, int minHeight, bool enableJavaScript, String percyCSS)
         {
-            if(!isPercyEnabled) {
+            if (!isPercyEnabled)
+            {
                 return;
             }
 
@@ -169,7 +190,10 @@ namespace percy_csharp_selenium
             catch (WebDriverException e)
             {
                 // For some reason, the execution in the browser failed.
-                Console.WriteLine("[percy] Something went wrong attempting to take a snapshot: " + e.Message);
+                if (PERCY_DEBUG)
+                {
+                    Log("Something went wrong attempting to take a snapshot:\n" + e.Message);
+                }
             }
 
             PostSnapshot(domSnapshot, name, widths, minHeight, driver.Url, enableJavaScript, percyCSS);
@@ -182,17 +206,21 @@ namespace percy_csharp_selenium
         * This JavaScript is critical for capturing snapshots. It serializes and captures
         * the DOM. Without it, snapshots cannot be captured.
         */
-        private async Task<string> FetchPercyDOM() {
-        
-            if (!String.IsNullOrEmpty(domJs.Trim())) { 
-                return domJs; 
+        private async Task<string> FetchPercyDOM()
+        {
+
+            if (!String.IsNullOrEmpty(domJs.Trim()))
+            {
+                return domJs;
             }
 
-            try {
+            try
+            {
                 HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
                 int statusCode = (int)response.StatusCode;
 
-                if (statusCode != 200){
+                if (statusCode != 200)
+                {
                     throw new Exception("Failed with HTTP error code: " + statusCode);
                 }
 
@@ -202,9 +230,14 @@ namespace percy_csharp_selenium
                 domJs = domString;
 
                 return domString;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 isPercyEnabled = false;
-                Console.WriteLine("[percy] Something went wrong attempting to fetch DOM: " + ex.Message);
+                if (PERCY_DEBUG)
+                {
+                    Log("Something went wrong attempting to fetch DOM:\n" + ex.ToString());
+                }
 
             }
 
@@ -222,7 +255,7 @@ namespace percy_csharp_selenium
              * @param enableJavaScript Enable JavaScript in the Percy rendering environment
              * @param percyCSS Percy specific CSS that is only applied in Percy's browsers
         */
-        private  void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
+        private void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
         {
             if (!isPercyEnabled)
             {
@@ -231,7 +264,7 @@ namespace percy_csharp_selenium
 
             if (widths == null)
             {
-                widths =  new List<int>{};
+                widths = new List<int> { };
             }
 
             if (percyCSS == null)
@@ -239,7 +272,7 @@ namespace percy_csharp_selenium
                 percyCSS = "";
             }
 
-            var  param_dict = new Dictionary<string, object>(){
+            var param_dict = new Dictionary<string, object>(){
 
                 {"url", url},
                 {"name", name},
@@ -260,16 +293,16 @@ namespace percy_csharp_selenium
 
         }
 
-        private async  Task<string> HttpPostPercySnapshot(Dictionary<string, object> param_dict)
+        private async Task<string> HttpPostPercySnapshot(Dictionary<string, object> param_dict)
         {
 
             try
-            {  
+            {
                 using (var httpClient = new HttpClient())
                 {
                     using (var request = new HttpRequestMessage(new HttpMethod("POST"), PERCY_SERVER_ADDRESS + "/percy/snapshot"))
                     {
-                        
+
                         request.Content = new StringContent(JsonConvert.SerializeObject(param_dict));
                         request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
                         var response = await httpClient.SendAsync(request);
@@ -282,8 +315,11 @@ namespace percy_csharp_selenium
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[percy] could not post snapshot: " + param_dict["name"]);
-                Console.WriteLine("[percy] An error occured when posting the snapshot: " + ex);
+                Log("Could not post snapshot: " + param_dict["name"]);
+                if (PERCY_DEBUG)
+                {
+                    Log("An error occured when posting the snapshot:\n" + ex.ToString());
+                }
             }
 
             return "";
@@ -301,5 +337,11 @@ namespace percy_csharp_selenium
             jsBuilder.Append(String.Format("return PercyDOM.serialize({{ enableJavaScript: {0} }})\n", enableJavaScript.ToLower()));
             return jsBuilder.ToString();
         }
+
+        private void Log(String message)
+        {
+            Console.WriteLine(LABEL + " " + message);
+        }
+
     }
 }
