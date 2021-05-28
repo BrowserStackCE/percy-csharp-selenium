@@ -5,7 +5,7 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [windows-latest]
         dotnet: [3.1.x]
     runs-on: ${{ matrix.os }}
     steps:
