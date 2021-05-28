@@ -2,3 +2,4 @@
 .vs/
 percy-csharp-selenium/bin/
 percy-csharp-selenium/obj/
+node_modules
