@@ -1,12 +1,7 @@
-<<<<<<< HEAD
 .vscode/
 .vs/
 percy-csharp-selenium/bin/
 percy-csharp-selenium/obj/
 node_modules
 **/*/.DS_Store
-=======
-percy-csharp-selenium/bin/
-percy-csharp-selenium/obj/
-.vscode/
->>>>>>> 02cee715f0e1bd9fa13c579cb1f9d033009028f5
+.DS_Store
