@@ -16,10 +16,10 @@ namespace percy_csharp_selenium
     public class Percy
     {
         // Selenium WebDriver we'll use for accessing the web pages to snapshot.
-        private IWebDriver driver;
+        private IWebDriver _driver;
 
         // The JavaScript contained in dom.js
-        private String domJs = "";
+        private String _domJs = "";
 
         // Maybe get the CLI server address if not Set the CLI server address 
         //could be moved to percy-csharp-selenium Environment
@@ -33,13 +33,13 @@ namespace percy_csharp_selenium
         private String LABEL;
 
         // Environment information like the programming language, browser, & SDK versions
-        private Environment env;
+        private Environment _env;
 
         // Is the Percy server running or not
-        private Boolean isPercyEnabled;
+        private Boolean _isPercyEnabled;
 
         // HttpClient is intended to be instantiated once per application, rather than per-use.
-        private static readonly HttpClient client = new HttpClient();
+        private static readonly HttpClient _client = new HttpClient();
 
         /**
              * @param driver The Selenium WebDriver object that will hold the browser
@@ -47,11 +47,11 @@ namespace percy_csharp_selenium
         */
         public Percy(IWebDriver driver)
         {
-            this.driver = driver;
-            this.env = new Environment(driver);
-            isPercyEnabled = Healthcheck().Result;
-            PERCY_DEBUG = System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS") != null &&
-                System.Environment.GetEnvironmentVariable("PERCY_SERVER_ADDRESS").Equals("debug");
+            this._driver = driver;
+            this._env = new Environment(driver);
+            _isPercyEnabled = Healthcheck().Result;
+            PERCY_DEBUG = System.Environment.GetEnvironmentVariable("PERCY_LOGLEVEL") != null &&
+                System.Environment.GetEnvironmentVariable("PERCY_LOGLEVEL").Equals("debug");
             LABEL = "[\u001b[35m" + (PERCY_DEBUG ? "percy:cs" : "percy") + "\u001b[39m]";
         }
 
@@ -64,7 +64,7 @@ namespace percy_csharp_selenium
             {
 
                 //Executing the Get request
-                HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/healthcheck");
+                HttpResponseMessage response = await _client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/healthcheck");
                 int statusCode = (int)response.StatusCode;
 
                 if (statusCode != 200)
@@ -105,7 +105,7 @@ namespace percy_csharp_selenium
                 Log("Percy is not running, disabling snapshots");
                 if (PERCY_DEBUG)
                 {
-                    Log(ex.ToString());
+                    Log(ex.StackTrace);
                 }
 
                 return false;
@@ -116,87 +116,45 @@ namespace percy_csharp_selenium
         /**
              * Take a snapshot and upload it to Percy.
              *
-             * @param name The human-readable name of the snapshot. Should be unique.
-             *
-        */
-        public void Snapshot(String name)
-        {
-            Snapshot(name, null, 0, false, null);
-        }
-
-        /**
-             * Take a snapshot and upload it to Percy.
-             *
-             * @param name   The human-readable name of the snapshot. Should be unique.
-             * @param widths The browser widths at which you want to take the snapshot. In
-             *               pixels.
-        */
-        public void Snapshot(String name, List<int> widths)
-        {
-            Snapshot(name, widths, 0, false, null);
-        }
-
-        /**
-             * Take a snapshot and upload it to Percy.
-             *
-             * @param name   The human-readable name of the snapshot. Should be unique.
-             * @param widths The browser widths at which you want to take the snapshot. In
-             *               pixels.
-             * @param minHeight The minimum height of the resulting snapshot. In pixels.
-             */
-        public void Snapshot(String name, List<int> widths, int minHeight)
-        {
-            Snapshot(name, widths, minHeight, false, null);
-        }
-
-        /**
-             * Take a snapshot and upload it to Percy.
-             *
-             * @param name   The human-readable name of the snapshot. Should be unique.
-             * @param widths The browser widths at which you want to take the snapshot. In
-             *               pixels.
-             * @param minHeight The minimum height of the resulting snapshot. In pixels.
-             * @param enableJavaScript Enable JavaScript in the Percy rendering environment
-             */
-        public void Snapshot(String name, List<int> widths, int minHeight, bool enableJavaScript)
-        {
-            Snapshot(name, widths, minHeight, enableJavaScript, null);
-        }
-
-        /**
-             * Take a snapshot and upload it to Percy.
-             *
              * @param name      The human-readable name of the snapshot. Should be unique.
-             * @param widths    The browser widths at which you want to take the snapshot.
-             *                  In pixels.
-             * @param minHeight The minimum height of the resulting snapshot. In pixels.
-             * @param enableJavaScript Enable JavaScript in the Percy rendering environment
-             * @param percyCSS Percy specific CSS that is only applied in Percy's browsers
+             * @param options   A dictionary of key value pairs which specifies the params to be passed to Percy for generating screenshot. e.g. widths, minHeight, enableJavascript, percyCSS etc.
              */
-        public void Snapshot(String name, List<int> widths, int minHeight, bool enableJavaScript, String percyCSS)
+        public void Snapshot(String name, Dictionary<string, object> options)
         {
-            if (!isPercyEnabled)
+            if (!_isPercyEnabled)
             {
                 return;
+            }
+
+            if (options == null)
+            {
+                options = new Dictionary<string, object>() { };
             }
 
             String domSnapshot = "";
             try
             {
-                IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
+
+                IJavaScriptExecutor jse = (IJavaScriptExecutor)_driver;
                 jse.ExecuteScript(FetchPercyDOM().Result);
+                bool enableJavaScript = false;
+                if (options.ContainsKey("enableJavaScript"))
+                {
+                    enableJavaScript = (bool)options["enableJavaScript"];
+                }
                 domSnapshot = (String)jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString()));
+
             }
             catch (WebDriverException e)
             {
                 // For some reason, the execution in the browser failed.
                 if (PERCY_DEBUG)
                 {
-                    Log("Something went wrong attempting to take a snapshot:\n" + e.Message);
+                    Log("Something went wrong attempting to take a snapshot:\n" + e.StackTrace);
                 }
             }
 
-            PostSnapshot(domSnapshot, name, widths, minHeight, driver.Url, enableJavaScript, percyCSS);
+            PostSnapshot(domSnapshot, name, options);
         }
 
         /**
@@ -209,14 +167,14 @@ namespace percy_csharp_selenium
         private async Task<string> FetchPercyDOM()
         {
 
-            if (!String.IsNullOrEmpty(domJs.Trim()))
+            if (!String.IsNullOrEmpty(_domJs.Trim()))
             {
-                return domJs;
+                return _domJs;
             }
 
             try
             {
-                HttpResponseMessage response = await client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
+                HttpResponseMessage response = await _client.GetAsync(PERCY_SERVER_ADDRESS + "/percy/dom.js");
                 int statusCode = (int)response.StatusCode;
 
                 if (statusCode != 200)
@@ -224,19 +182,18 @@ namespace percy_csharp_selenium
                     throw new Exception("Failed with HTTP error code: " + statusCode);
                 }
 
-
                 HttpContent httpEntity = response.Content;
                 String domString = httpEntity.ReadAsStringAsync().Result;
-                domJs = domString;
+                _domJs = domString;
 
                 return domString;
             }
             catch (Exception ex)
             {
-                isPercyEnabled = false;
+                _isPercyEnabled = false;
                 if (PERCY_DEBUG)
                 {
-                    Log("Something went wrong attempting to fetch DOM:\n" + ex.ToString());
+                    Log("Something went wrong attempting to fetch DOM:\n" + ex.StackTrace);
                 }
 
             }
@@ -249,51 +206,40 @@ namespace percy_csharp_selenium
              *
              * @param domSnapshot Stringified & serialized version of the site/applications DOM
              * @param name        The human-readable name of the snapshot. Should be unique.
-             * @param widths      The browser widths at which you want to take the snapshot.
-             *                    In pixels.
-             * @param minHeight   The minimum height of the resulting snapshot. In pixels.
-             * @param enableJavaScript Enable JavaScript in the Percy rendering environment
-             * @param percyCSS Percy specific CSS that is only applied in Percy's browsers
+             * @param options     A dictionary of key value pairs which specifies the params to be passed to Percy for generating screenshot. e.g. widths, minHeight, enableJavascript, percyCSS etc.
         */
-        private void PostSnapshot(String domSnapshot, String name, List<int> widths, int minHeight, String url, bool enableJavaScript, String percyCSS)
+        private void PostSnapshot(String domSnapshot, String name, Dictionary<string, object> options)
         {
-            if (!isPercyEnabled)
+            if (!_isPercyEnabled)
             {
                 return;
             }
 
-            if (widths == null)
+            if (!options.ContainsKey("widths"))
             {
-                widths = new List<int> { };
+                options["widths"] = new List<int> { };
             }
 
-            if (percyCSS == null)
+            if (!options.ContainsKey("percyCSS"))
             {
-                percyCSS = "";
+                options["percyCSS"] = "";
             }
 
-            var param_dict = new Dictionary<string, object>(){
+            if (!options.ContainsKey("enableJavaScript"))
+            {
+                options["enableJavaScript"] = false;
+            }
 
-                {"url", url},
-                {"name", name},
-                {"percyCSS", percyCSS},
-                {"domSnapshot", domSnapshot },
-                {"clientInfo", env.getClientInfo()},
-                { "enableJavaScript", enableJavaScript },
-                { "environmentInfo", env.getEnvironmentInfo()},
-                { "widths", widths},
-                { "minHeight", minHeight }
-
-            };
-
-
-            var res = HttpPostPercySnapshot(param_dict).Result;
-
-
-
+            options["url"] = _driver.Url;
+            options["name"] = name;
+            options["domSnapshot"] = domSnapshot;
+            options["clientInfo"] = _env.GetClientInfo();
+            options["environmentInfo"] = _env.GetEnvironmentInfo();
+            
+            var res = HttpPostPercySnapshot(options).Result;
         }
 
-        private async Task<string> HttpPostPercySnapshot(Dictionary<string, object> param_dict)
+        private async Task<string> HttpPostPercySnapshot(Dictionary<string, object> options)
         {
 
             try
@@ -302,23 +248,21 @@ namespace percy_csharp_selenium
                 {
                     using (var request = new HttpRequestMessage(new HttpMethod("POST"), PERCY_SERVER_ADDRESS + "/percy/snapshot"))
                     {
-
-                        request.Content = new StringContent(JsonConvert.SerializeObject(param_dict));
+                        request.Content = new StringContent(JsonConvert.SerializeObject(options));
                         request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
                         var response = await httpClient.SendAsync(request);
                         response.EnsureSuccessStatusCode();
                         var responseString = response.Content.ReadAsStringAsync().Result;
-
                     }
                 }
 
             }
             catch (Exception ex)
             {
-                Log("Could not post snapshot: " + param_dict["name"]);
+                Log("Could not post snapshot: " + options["name"]);
                 if (PERCY_DEBUG)
                 {
-                    Log("An error occured when posting the snapshot:\n" + ex.ToString());
+                    Log("An error occured when posting the snapshot:\n" + ex.StackTrace);
                 }
             }
 

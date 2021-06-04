@@ -3,3 +3,4 @@
 percy-csharp-selenium/bin/
 percy-csharp-selenium/obj/
 node_modules
+**/*/.DS_Store

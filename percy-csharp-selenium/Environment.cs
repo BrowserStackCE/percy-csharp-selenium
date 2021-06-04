@@ -10,23 +10,23 @@ namespace percy_csharp_selenium
 
         private readonly static String DEFAULT_ARTIFACTID = "percy-csharp-selenium";
         private readonly static String SDK_VERSION = "1.0.0";
-        private readonly IWebDriver driver;
+        private readonly IWebDriver _driver;
 
-        public Environment(IWebDriver driver)
+        public Environment(IWebDriver _driver)
         {
-            this.driver = driver;
+            this._driver = _driver;
         }
 
-        public String getClientInfo()
+        public String GetClientInfo()
         {
-            String artifactId = DEFAULT_ARTIFACTID;
+            String artifactID = DEFAULT_ARTIFACTID;
             String version = SDK_VERSION;
-            return String.Format("%s/%s", artifactId, version);
+            return String.Format("{0}/{1}", artifactID, version);
         }
 
-        public String getEnvironmentInfo()
+        public String GetEnvironmentInfo()
         {
-            ICapabilities cap = ((IHasCapabilities)this.driver).Capabilities;
+            ICapabilities capabilities = ((IHasCapabilities)this._driver).Capabilities;
 
             String os;
             String browserName;
@@ -34,35 +34,35 @@ namespace percy_csharp_selenium
 
 
             // check for platform
-            if (cap.HasCapability("platformName"))
-                os = cap.GetCapability("platformName").ToString().ToLower();
-            else if (cap.HasCapability("platform"))
-                os = cap.GetCapability("platform").ToString().ToLower();
-            else if (cap.HasCapability("os"))
-                os = cap.GetCapability("os").ToString().ToLower();
+            if (capabilities.HasCapability("platformName"))
+                os = capabilities.GetCapability("platformName").ToString().ToLower();
+            else if (capabilities.HasCapability("platform"))
+                os = capabilities.GetCapability("platform").ToString().ToLower();
+            else if (capabilities.HasCapability("os"))
+                os = capabilities.GetCapability("os").ToString().ToLower();
             else
                 os = "unknownPlatform";
 
 
             // check for browser name
-            if (cap.HasCapability("browserName"))
-                browserName = cap.GetCapability("browserName").ToString().ToLower();
-            if (cap.HasCapability("browser"))
-                browserName = cap.GetCapability("browser").ToString().ToLower();
+            if (capabilities.HasCapability("browserName"))
+                browserName = capabilities.GetCapability("browserName").ToString().ToLower();
+            if (capabilities.HasCapability("browser"))
+                browserName = capabilities.GetCapability("browser").ToString().ToLower();
             else
                 browserName = "unknownBrowser";
 
 
             // check for browser version
-            if (cap.HasCapability("browserVersion"))
-                version = cap.GetCapability("browserVersion").ToString().ToLower();
-            else if (cap.HasCapability("version"))
-                version = cap.GetCapability("version").ToString().ToLower();
+            if (capabilities.HasCapability("browserVersion"))
+                version = capabilities.GetCapability("browserVersion").ToString().ToLower();
+            else if (capabilities.HasCapability("version"))
+                version = capabilities.GetCapability("version").ToString().ToLower();
             else
                 version = "unknownVersion";
 
 
-            return String.Format("selenium-csharp; %s; %s/%s", os, browserName, version);
+            return String.Format("selenium-csharp; {0}; {1}/{2}", os, browserName, version);
         }
     }
 
