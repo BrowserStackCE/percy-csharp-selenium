@@ -8,10 +8,10 @@ namespace percy_csharp_selenium
         {
             AppTest test_object = new AppTest();
             test_object.StartAppAndOpenBrowser();
-            test_object.loadsHomePage();
-            test_object.acceptsANewTodo();
-            test_object.letsYouCheckOffATodo();
-            test_object.closeBrowser();
+            test_object.LoadsHomePage();
+            test_object.AcceptsANewTodo();
+            test_object.LetsYouCheckOffATodo();
+            test_object.CloseBrowser();
         }
     }
 }
