@@ -23,6 +23,6 @@ jobs:
           restore-keys: v1/${{ runner.os }}/dotnet-${{ matrix.dotnet }}/
       - run: yarn
       - run: dotnet build
-      - run: npm test
+      - run: npm run test-core
         env:
           PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
