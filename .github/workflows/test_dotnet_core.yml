@@ -23,6 +23,6 @@ jobs:
           restore-keys: v1/${{ runner.os }}/dotnet-${{ matrix.dotnet }}/
       - run: yarn
       - run: dotnet build
-      - run: npx percy exec -- dotnet percy-csharp-selenium/bin/Debug/netcoreapp3.1/percy-csharp-selenium.dll
+      - run: npm test
         env:
           PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
