@@ -1,3 +1,7 @@
+.vscode/
+.vs/
 percy-csharp-selenium/bin/
 percy-csharp-selenium/obj/
-.vscode/
+node_modules
+**/*/.DS_Store
+.DS_Store
