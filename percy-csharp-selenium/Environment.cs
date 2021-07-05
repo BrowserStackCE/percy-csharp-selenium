@@ -19,8 +19,8 @@ namespace percy_csharp_selenium
         }
 
         public static String GetEnvironmentInfo()
-        {// TODO
-            return String.Format("selenium-csharp; {0}; {1}","2.03", System.Environment.Version.ToString());
+        {
+            return String.Format("selenium-csharp; {0}; {1}",OpenQA.Selenium.Internal.ResourceUtilities.AssemblyVersion, System.Environment.Version.ToString());
         }
     }
 
