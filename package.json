@@ -1,8 +1,8 @@
 {
     "private": true,
     "scripts": {
-        "test": "dotnet build && cp -r percy-csharp-selenium/testapp percy-csharp-selenium/bin/Debug/**/ & npx percy exec -- dotnet percy-csharp-selenium/bin/Debug/*/percy-csharp-selenium.dll",
-        "test-core": "dotnet build && cp -r percy-csharp-selenium/testapp percy-csharp-selenium/bin/Debug/netcoreapp3.1 & npx percy exec -- dotnet percy-csharp-selenium/bin/Debug/netcoreapp3.1/percy-csharp-selenium.dll"
+        "test": "npm install && dotnet build && cp -r percy-csharp-selenium/testapp percy-csharp-selenium/bin/Debug/**/ && npx percy exec -- dotnet percy-csharp-selenium/bin/Debug/*/percy-csharp-selenium.dll",
+        "test-core": "npm install && dotnet build && cp -r percy-csharp-selenium/testapp percy-csharp-selenium/bin/Debug/netcoreapp3.1 && npx percy exec -- dotnet percy-csharp-selenium/bin/Debug/netcoreapp3.1/percy-csharp-selenium.dll"
     },
     "devDependencies": {
         "@percy/cli": "^1.0.0-beta.52"

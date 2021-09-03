@@ -15,9 +15,6 @@ namespace percy_csharp_selenium
     */
     public class Percy
     {
-        // Selenium WebDriver we'll use for accessing the web pages to snapshot.
-        private IWebDriver _driver;
-
         // The JavaScript contained in dom.js
         private String _domJs = "";
 
@@ -33,7 +30,6 @@ namespace percy_csharp_selenium
         private String LABEL;
 
         // Environment information like the programming language, browser, & SDK versions
-        private Environment _env;
 
         // Is the Percy server running or not
         private Boolean _isPercyEnabled;
@@ -45,10 +41,8 @@ namespace percy_csharp_selenium
              * @param driver The Selenium WebDriver object that will hold the browser
              *               session to snapshot.
         */
-        public Percy(IWebDriver driver)
+        public Percy()
         {
-            this._driver = driver;
-            this._env = new Environment(driver);
             _isPercyEnabled = Healthcheck().Result;
             PERCY_DEBUG = System.Environment.GetEnvironmentVariable("PERCY_LOGLEVEL") != null &&
                 System.Environment.GetEnvironmentVariable("PERCY_LOGLEVEL").Equals("debug");
@@ -119,7 +113,7 @@ namespace percy_csharp_selenium
              * @param name      The human-readable name of the snapshot. Should be unique.
              * @param options   A dictionary of key value pairs which specifies the params to be passed to Percy for generating screenshot. e.g. widths, minHeight, enableJavascript, percyCSS etc.
              */
-        public void Snapshot(String name, Dictionary<string, object> options)
+        public void Snapshot(IWebDriver driver, String name, Dictionary<string, object> options)
         {
             if (!_isPercyEnabled)
             {
@@ -135,7 +129,7 @@ namespace percy_csharp_selenium
             try
             {
 
-                IJavaScriptExecutor jse = (IJavaScriptExecutor)_driver;
+                IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
                 jse.ExecuteScript(FetchPercyDOM().Result);
                 bool enableJavaScript = false;
                 if (options.ContainsKey("enableJavaScript"))
@@ -154,7 +148,7 @@ namespace percy_csharp_selenium
                 }
             }
 
-            PostSnapshot(domSnapshot, name, options);
+            PostSnapshot(driver, domSnapshot, name, options);
         }
 
         /**
@@ -208,7 +202,7 @@ namespace percy_csharp_selenium
              * @param name        The human-readable name of the snapshot. Should be unique.
              * @param options     A dictionary of key value pairs which specifies the params to be passed to Percy for generating screenshot. e.g. widths, minHeight, enableJavascript, percyCSS etc.
         */
-        private void PostSnapshot(String domSnapshot, String name, Dictionary<string, object> options)
+        private void PostSnapshot(IWebDriver driver, String domSnapshot, String name, Dictionary<string, object> options)
         {
             if (!_isPercyEnabled)
             {
@@ -230,11 +224,11 @@ namespace percy_csharp_selenium
                 options["enableJavaScript"] = false;
             }
 
-            options["url"] = _driver.Url;
+            options["url"] = driver.Url;
             options["name"] = name;
             options["domSnapshot"] = domSnapshot;
-            options["clientInfo"] = _env.GetClientInfo();
-            options["environmentInfo"] = _env.GetEnvironmentInfo();
+            options["clientInfo"] = Environment.GetClientInfo();
+            options["environmentInfo"] = Environment.GetEnvironmentInfo();
             
             var res = HttpPostPercySnapshot(options).Result;
         }
