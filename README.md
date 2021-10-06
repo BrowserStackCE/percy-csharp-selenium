@@ -95,6 +95,10 @@ The snapshot method arguments:
 
 You can also configure Percy to use the same options over all snapshots. To see supported configuration including widths read our [SDK configuration](https://docs.percy.io/docs/cli-configuration) docs
 
+## Environment Variables
+
+Refer [Docs](https://docs.percy.io/docs/environment-variables)
+
 ## Upgrading
 
 ### Automatically with `@percy/migrate`
