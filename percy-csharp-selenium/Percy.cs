@@ -136,7 +136,7 @@ namespace percy_csharp_selenium
                 {
                     enableJavaScript = (bool)options["enableJavaScript"];
                 }
-                domSnapshot = (String)jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString()));
+                domSnapshot = jse.ExecuteScript(BuildSnapshotJS(enableJavaScript.ToString())).ToString();
 
             }
             catch (WebDriverException e)
