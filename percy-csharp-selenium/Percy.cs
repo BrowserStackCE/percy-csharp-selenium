@@ -272,7 +272,7 @@ namespace percy_csharp_selenium
         {
             StringBuilder jsBuilder = new StringBuilder();
             // the double {{ and }} are needed to escape the curly braces
-            jsBuilder.Append(String.Format("return PercyDOM.serialize({{ enableJavaScript: {0} }})\n", enableJavaScript.ToLower()));
+            jsBuilder.Append(String.Format("return PercyDOM.serialize({{ enableJavaScript: {0}, stringfy_response: true }})\n", enableJavaScript.ToLower()));
             return jsBuilder.ToString();
         }
 
