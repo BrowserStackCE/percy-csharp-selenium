@@ -1,6 +1,8 @@
+Forked from [Origin](https://github.com/BrowserStackCE/percy-csharp-selenium), fixed a cast type error and remove .Net 4.5 4.6 4.7
+
 # Percy C# Selenium
 
-[Percy](https://percy.io) visual testing for C#.NET Selenium. (Supports both .NET Core and .NET Framework - 4.5 to 4.8)
+[Percy](https://percy.io) visual testing for C#.NET Selenium. (Supports both .NET Core and .NET Framework - 4.8)
 
 ## Requirements
 
